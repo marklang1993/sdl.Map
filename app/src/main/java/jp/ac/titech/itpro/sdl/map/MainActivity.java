@@ -10,6 +10,8 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -43,13 +45,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private FusedLocationProviderClient locationClient;
     private LocationRequest request;
     private LocationCallback callback;
-
-    private enum State {
-        STOPPED,
-        REQUESTING,
-        STARTED
-    }
-    private State state = State.STOPPED;
 
 
     @Override
@@ -94,8 +89,18 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     return;
                 }
                 map.animateCamera(CameraUpdateFactory.newLatLng(ll));
+
+                stopLocationUpdate();
             }
         };
+
+        Button updateBtn = (Button) findViewById(R.id.update);
+        updateBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startLocationUpdate(true);
+            }
+        });
     }
 
     @Override
@@ -106,29 +111,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        Log.d(TAG, "onResume");
-        if (state != State.STARTED && apiClient.isConnected()) {
-            startLocationUpdate(true);
-        } else {
-            state = State.REQUESTING;
-        }
-    }
-
-    @Override
-    protected void onPause() {
-        Log.d(TAG, "onPause");
-        if (state == State.STARTED) {
-            stopLocationUpdate();
-        }
-        super.onPause();
-    }
-
-    @Override
     protected void onStop() {
         Log.d(TAG, "onStop");
         apiClient.disconnect();
+        stopLocationUpdate();
         super.onStop();
     }
 
@@ -142,9 +128,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public void onConnected(@Nullable Bundle bundle) {
         Log.d(TAG, "onConnected");
-        if (state == State.REQUESTING) {
-            startLocationUpdate(true);
-        }
     }
 
     @Override
@@ -171,7 +154,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         }
         locationClient.requestLocationUpdates(request, callback, null);
-        state = State.STARTED;
     }
 
     @Override
@@ -187,6 +169,5 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private void stopLocationUpdate() {
         Log.d(TAG, "stopLocationUpdate");
         locationClient.removeLocationUpdates(callback);
-        state = State.STOPPED;
     }
 }
